@@ -28,3 +28,42 @@ connection.connect(function(err) {
     }
     console.log("connected as id " + connection.threadId);
   });
+
+  view();
+
+  function view() {
+    inquirer.prompt([
+      {
+        type: "list",
+        name: "choice",
+        message: "Which table would you like to view?",
+        choices: ["departments", "roles", "employees"]
+      }
+    ])
+    .then( answers => {
+      let { choice }  = answers;
+      switch (choice) {
+        case "departments":
+          connection.query("SELECT * FROM departments", (err, data) => {
+            if (err) throw err;
+            console.table(data);
+          })
+          break;
+        case "roles":
+          connection.query("SELECT * FROM roles", (err, data) => {
+            if (err) throw err;
+            console.table(data);
+          });
+          break;
+        case "employees":
+          connection.query("SELECT * FROM employees", (err, data) => {
+            if (err) throw err;
+            console.table(data);
+          })
+          break;
+      };
+    })
+    .catch( error => {
+      if (error) throw error;
+    })
+  }
