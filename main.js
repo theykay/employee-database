@@ -130,6 +130,7 @@ const newEmployee = () => {
       name: "role_id",
       choices: options
     }
+    // ask if they want to add manager id, then handle based on that
   ])
     .then(answers => {
       console.log(answers)
