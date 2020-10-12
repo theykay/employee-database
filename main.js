@@ -72,13 +72,13 @@ const add = () => {
       connection.query("SELECT * FROM roles", (err, data) => valid(err, data, roleDataExists));
       connection.query("SELECT * FROM departments", (err, data) => valid(err, data, departmentDataExists));
       if (type === "employee") {
-        if (!roleDataExists) {
+        if (roleDataExists === false) {
           console.log("Error: There must be at least one role before you can add an employee");
           add();
         }
         newEmployee();
       } else if (type === "role") {
-        if (!departmentDataExists) {
+        if (departmentDataExists === false) {
           console.log("Error: There must be at least one department before you can add a role");
           add();
         }
@@ -93,7 +93,54 @@ const add = () => {
 }
 // ...employee
 const newEmployee = () => {
+  let options = [];
+  connection.query("SELECT * FROM roles", (err, data) => {
+    if (err) throw err;
+    data.forEach((entry) => {
+      let name = entry.title;
+      let value = entry.id;
+      options.push({ name, value });
+    });
+    return options;
+  });
 
+  inquirer.prompt([
+    {
+      type: "input",
+      name: "first_name",
+      message: "Enter first name: ",
+      validate: (input) => {
+        const passing = input.match(/^[a-z]+$/gi);
+        if (!passing) return false;
+        return true;
+      }
+    },
+    {
+      type: "input",
+      name: "last_name",
+      message: "Enter last name: ",
+      validate: input => {
+        const passing = input.match(/^[a-z]+$/gi);
+        if (!passing) return false;
+        return true;
+      }
+    },
+    {
+      type: "list",
+      name: "role_id",
+      choices: options
+    }
+  ])
+    .then(answers => {
+      console.log(answers)
+      connection.query("INSERT INTO employees SET ?", answers, (err, data) => {
+        if (err) throw err;
+        console.log(`${answers.first_name} ${answers.last_name} added to database!`)
+      })
+    })
+    .catch(err => {
+      if (err) throw err;
+    })
 }
 // ...role
 const newRole = () => {
