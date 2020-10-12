@@ -5,11 +5,11 @@ const chalk = require("chalk");
 const table = require("table");
 
 var connection = mysql.createConnection({
-    host: "localhost",
-    port: 3306,
-    user: "root",
-    password: process.env.mysql,
-    database: "employees_db"
+  host: "localhost",
+  port: 3306,
+  user: "root",
+  password: process.env.mysql,
+  database: "employees_db"
 })
 
 // console colors
@@ -21,27 +21,112 @@ const magenta = chalk.bold.magenta;
 const cyan = chalk.bold.cyan;
 const grey = chalk.bold.grey;
 
-connection.connect(function(err) {
-    if (err) {
-      console.error("error connecting: " + err.stack);
-      return;
+connection.connect(function (err) {
+  if (err) {
+    console.error("error connecting: " + err.stack);
+    return;
+  }
+  console.log("connected as id " + connection.threadId);
+  add();
+});
+
+// **********************************************
+// **********************************************
+// week 12 activity 10 for using sql tables to
+// populate inquirer prompt choices in list type
+// **********************************************
+// **********************************************
+// week 12 activity 5 for joining tables
+// **********************************************
+// **********************************************
+// **********************************************
+// **********************************************
+// **********************************************
+// **********************************************
+// **********************************************
+
+const valid = (err, data, variable) => {
+  if (err) throw err;
+  if (data.length === 0) {
+    variable = false;
+  } else {
+    variable = true;
+  }
+  return variable;
+}
+
+// add...
+const add = () => {
+  inquirer.prompt([
+    {
+      type: "list",
+      name: "type",
+      message: "What new data would you like to add?",
+      choices: ["department", "role", "employee"]
     }
-    console.log("connected as id " + connection.threadId);
-  });
+  ])
+    .then(answers => {
+      const { type } = answers;
+      let roleDataExists;
+      let departmentDataExists;
+      connection.query("SELECT * FROM roles", (err, data) => valid(err, data, roleDataExists));
+      connection.query("SELECT * FROM departments", (err, data) => valid(err, data, departmentDataExists));
+      if (type === "employee") {
+        if (!roleDataExists) {
+          console.log("Error: There must be at least one role before you can add an employee");
+          add();
+        }
+        newEmployee();
+      } else if (type === "role") {
+        if (!departmentDataExists) {
+          console.log("Error: There must be at least one department before you can add a role");
+          add();
+        }
+        newRole();
+      } else if (type === "department") {
+        newDepartment();
+      };
+    })
+    .catch(err => {
+      if (err) throw err;
+    })
+}
+// ...employee
+const newEmployee = () => {
 
-  view();
+}
+// ...role
+const newRole = () => {
 
-  function view() {
-    inquirer.prompt([
-      {
-        type: "list",
-        name: "choice",
-        message: "Which table would you like to view?",
-        choices: ["departments", "roles", "employees"]
-      }
-    ])
-    .then( answers => {
-      let { choice }  = answers;
+}
+// ...department
+const newDepartment = () => {
+  inquirer.prompt([
+    {
+      type: "input",
+
+    }
+  ])
+    .then(answers => {
+
+    })
+    .catch(error => {
+      if (error) throw error;
+    });
+}
+
+// view tables
+const view = () => {
+  inquirer.prompt([
+    {
+      type: "list",
+      name: "choice",
+      message: "Which table would you like to view?",
+      choices: ["departments", "roles", "employees"]
+    }
+  ])
+    .then(answers => {
+      let { choice } = answers;
       switch (choice) {
         case "departments":
           connection.query("SELECT * FROM departments", (err, data) => {
@@ -63,7 +148,7 @@ connection.connect(function(err) {
           break;
       };
     })
-    .catch( error => {
+    .catch(error => {
       if (error) throw error;
-    })
-  }
+    });
+};
