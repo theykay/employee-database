@@ -56,6 +56,7 @@ const main = async () => {
     } else if (response.action === 3) {
         update();
     };
+    main();
 };
 
 // add...
@@ -66,11 +67,6 @@ const add = async () => {
             name: "type",
             message: "What new data would you like to add?",
             choices: ["department", "role", "employee"]
-        },
-        {
-            type: "confirm",
-            name: "confirm",
-            message: "Would you like to view current data for your chosen field?"
         }
     ]);
     const { type, confirm } = addition;
@@ -89,12 +85,6 @@ const add = async () => {
             console.log("Returning to addition main...")
             add();
         } else {
-            if (confirm) {
-                connection.query("SELECT first_name, last_name FROM employees", (err, data) => {
-                    if (err) throw err;
-                    console.table(data);
-                })
-            }
             newEmployee();
         };
     } else if (type === "role") {
@@ -110,32 +100,11 @@ const add = async () => {
             console.log("Returning to addition main...");
             add();
         } else {
-            if (confirm) {
-                connection.query("SELECT title FROM roles", (err, data) => {
-                    if (err) throw err;
-                    console.table(data);
-                })
-            }
             newRole();
         }
     } else if (type === "department") {
-        if (confirm) {
-            connection.query("SELECT department_name FROM departments", (err, data) => {
-                if (err) throw err;
-                console.table(data);
-            });
-        }
         newDepartment();
     };
-    let again = await inquirer.prompt([
-        {
-            type: "confirm",
-            name: "confirm",
-            message: "Return to main menu?"
-        }
-    ]);
-    if (again.confirm) main();
-    else end();
 };
 // ...employee
 const newEmployee = async () => {
@@ -313,10 +282,15 @@ const update = async () => {
         data.forEach((entry) => {
             let name = entry.first_name + " " + entry.last_name;
             let value = entry.id;
-            employees.push({ name, value });
+            let employee = {
+                name: name,
+                value: value
+            }
+            employees.push(employee);
         });
         return employees;
     });
+    console.log(employees);
 
     let roles = [];
     connection.query("SELECT * FROM roles", (err, data) => {
@@ -324,7 +298,11 @@ const update = async () => {
         data.forEach((entry) => {
             let name = entry.title;
             let value = entry.id;
-            roles.push({ name, value });
+            let role = {
+                name: name,
+                value: value
+            }
+            roles.push(role);
         })
         return roles;
     });
@@ -344,13 +322,13 @@ const update = async () => {
         }
     ]);
     let name;
-    connection.query("SELECT * FROM employees WHERE ?", [{ id: answers.id }], (err, data) => {
+    connection.query("SELECT * FROM employees WHERE ?", [{ id: info.id }], (err, data) => {
         if (err) throw err;
         name = data.first_name + " " + data.last_name;
     });
-    connection.query("UPDATE employees SET ? WHERE ?", [{ role: answers.role }, { id: answers.id }], (err) => {
+    connection.query("UPDATE employees SET ? WHERE ?", [{ role: info.role }, { id: info.id }], (err) => {
         if (err) throw err;
-        console.log(name + "\'s role updated to " + answers.role.name + "!");
+        console.log(name + "\'s role updated to " + info.role.name + "!");
     });
     main();
 }
