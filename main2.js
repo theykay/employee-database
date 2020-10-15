@@ -2,7 +2,7 @@ require("dotenv").config();
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 const chalk = require("chalk");
-const table = require("table");
+const cTable = require("console.table");
 
 var connection = mysql.createConnection({
     host: "localhost",
