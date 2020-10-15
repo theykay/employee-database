@@ -257,13 +257,13 @@ const view = async () => {
             })
             break;
         case "roles":
-            connection.query("SELECT * FROM roles", (err, data) => {
+            connection.query("SELECT roles.id, title, salary, department_name FROM roles LEFT JOIN departments ON roles.department_id = departments.id;", (err, data) => {
                 if (err) throw err;
                 console.table(data);
             });
             break;
         case "employees":
-            connection.query("SELECT * FROM employees", (err, data) => {
+            connection.query("SELECT e.id, e.first_name, e.last_name, title, department_name, salary, IFNULL(CONCAT(m.first_name, ' ', m.last_name), ' ') AS manager FROM employees e LEFT JOIN roles ON e.role_id = roles.id LEFT JOIN departments ON roles.department_id = departments.id LEFT JOIN employees m ON e.id = m.manager_id;", (err, data) => {
                 if (err) throw err;
                 console.table(data);
             })
@@ -284,56 +284,133 @@ const update = async () => {
     let employees = [];
     connection.query("SELECT * FROM employees", (err, data) => {
         if (err) throw err;
+        // console.log(data);
         data.forEach((entry) => {
             let name = entry.first_name + " " + entry.last_name;
             let value = entry.id;
-            employees.push({ name, value });
+            let employee = {
+                name: name,
+                value: value
+            }
+            employees.push(employee);
         });
+        // console.log(employees);
         return employees;
     });
-    console.log(employees);
-    var info = await inquirer.prompt([
+
+    let roles = [];
+    connection.query("SELECT * FROM roles", (err, data) => {
+        if (err) throw err;
+        data.forEach(entry => {
+            let name = entry.title;
+            let value = entry.id;
+            let role = {
+                name: name,
+                value: value
+            }
+            roles.push(role);
+        })
+        // console.log(roles);
+        return roles;
+    });
+
+    var choice = await inquirer.prompt([
         {
             type: "list",
-            name: "id",
-            message: "Whose role would you like to update?",
-            choices: employees
-        },
-        {
-            type: "list",
-            name: "role",
-            message: "Select new role",
-            choices: connection.query("SELECT * FROM roles", (err, data) => {
-                if (err) throw err;
-                let roles = [];
-                data.forEach(entry => {
-                    let name = entry.title;
-                    let value = entry.id;
-                    let role = {
-                        name: name,
-                        value: value
-                    }
-                    roles.push(role);
-                })
-                console.log(roles);
-                return roles;
-            })
+            name: "pick",
+            message: "What info would you like to update?",
+            choices: ["manager", "role", "both"]
         }
     ]);
-    let name;
-    connection.query("SELECT * FROM employees WHERE ?", [{ id: info.id }], (err, data) => {
-        if (err) throw err;
-        name = data.first_name + " " + data.last_name;
-    });
-    connection.query("UPDATE employees SET ? WHERE ?", [{ role: info.role }, { id: info.id }], (err) => {
-        if (err) throw err;
-        console.log(name + "\'s role updated to " + info.role.name + "!");
-    });
+    // var questions = [];
+    if (choice.pick === "manager") {
+        var info = await inquirer.prompt([
+            {
+                type: "list",
+                name: "id",
+                message: "Whose role would you like to update?",
+                choices: employees
+            },
+            {
+                type: "list",
+                name: "manager_id",
+                message: "Select a manager",
+                choices: employees
+            }
+        ])
+        let name;
+        connection.query("SELECT * FROM employees WHERE ?", [{ id: info.id }], (err, data) => {
+            if (err) throw err;
+            name = data[0].first_name + " " + data[0].last_name;
+        });
+        let manager;
+        connection.query("SELECT * FROM employees WHERE ?", [{ id: info.manager_id }, (err, data) => {
+            if (err) throw err;
+            manager = data[0].first_name + " " + data[0].last_name;
+        }])
+        connection.query("UPDATE employees SET ? WHERE ?", [{ manager_id: info.manager_id }, { id: info.id }], (err) => {
+            if (err) throw err;
+            console.log(name + "\'s manager updated to " + manager + "!");
+        });
+    } else if (choice.pick === "role") {
+        var info = await inquirer.prompt([
+            {
+                type: "list",
+                name: "id",
+                message: "Whose role would you like to update?",
+                choices: employees
+            },
+            {
+                type: "list",
+                name: "role",
+                message: "Select new role",
+                choices: roles
+            }
+        ]);
+        let name;
+        connection.query("SELECT * FROM employees WHERE ?", [{ id: info.id }], (err, data) => {
+            if (err) throw err;
+            name = data[0].first_name + " " + data[0].last_name;
+        });
+        connection.query("UPDATE employees SET ? WHERE ?", [{ role_id: info.role }, { id: info.id }], (err) => {
+            if (err) throw err;
+            console.log(name + "\'s role updated to " + info.role.name + "!");
+        });
+    } else if (choice.pick === "both") {
+        var info = await inquirer.prompt([
+
+            {
+                type: "list",
+                name: "id",
+                message: "Whose role would you like to update?",
+                choices: employees
+            },
+            {
+                type: "list",
+                name: "manager_id",
+                message: "Select a manager",
+                choices: employees
+            },
+            {
+                type: "list",
+                name: "role",
+                message: "Select new role",
+                choices: roles
+            }
+        ]);
+        let name;
+        let role = info.role.name;
+        connection.query("SELECT * FROM employees WHERE ?", [{ id: info.id }], (err, data) => {
+            if (err) throw err;
+            name = data[0].first_name + " " + data[0].last_name;
+        });
+        connection.query("UPDATE employees SET ? WHERE ?", [{ role_id: info.role, manager_id: info.manager_id }, { id: info.id }], (err) => {
+            if (err) throw err;
+            console.log(name + "\'s manager updated to " + manager + "!")
+            console.log(name + "\'s role updated to " + role + "!");
+        });
+    }
     main();
-}
-
-let getLists = (array1, array2) => {
-
 }
 
 const end = () => {
