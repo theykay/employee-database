@@ -56,7 +56,7 @@ const main = async () => {
     } else if (response.action === 3) {
         update();
     };
-    main();
+    // main();
 };
 
 // add...
@@ -106,6 +106,7 @@ const add = async () => {
         newDepartment();
     };
 };
+
 // ...employee
 const newEmployee = async () => {
     let options = [];
@@ -154,6 +155,7 @@ const newEmployee = async () => {
         {
             type: "list",
             name: "role_id",
+            message: "Select a role: ",
             choices: options
         },
         {
@@ -167,6 +169,7 @@ const newEmployee = async () => {
         if (err) throw err;
         console.log(`${info.first_name} ${info.last_name} added to employees!`)
     });
+    main();
 };
 // ...role
 const newRole = async () => {
@@ -212,6 +215,7 @@ const newRole = async () => {
         if (err) throw err;
         console.log(`${info.title} added to roles!`)
     });
+    main();
 }
 // ...department
 const newDepartment = async () => {
@@ -231,6 +235,7 @@ const newDepartment = async () => {
         if (err) throw err;
         console.log(`${info.department_name} added to departments!`)
     });
+    main();
 };
 
 // view tables
@@ -282,31 +287,11 @@ const update = async () => {
         data.forEach((entry) => {
             let name = entry.first_name + " " + entry.last_name;
             let value = entry.id;
-            let employee = {
-                name: name,
-                value: value
-            }
-            employees.push(employee);
+            employees.push({ name, value });
         });
         return employees;
     });
     console.log(employees);
-
-    let roles = [];
-    connection.query("SELECT * FROM roles", (err, data) => {
-        if (err) throw err;
-        data.forEach((entry) => {
-            let name = entry.title;
-            let value = entry.id;
-            let role = {
-                name: name,
-                value: value
-            }
-            roles.push(role);
-        })
-        return roles;
-    });
-
     var info = await inquirer.prompt([
         {
             type: "list",
@@ -318,7 +303,21 @@ const update = async () => {
             type: "list",
             name: "role",
             message: "Select new role",
-            choices: roles
+            choices: connection.query("SELECT * FROM roles", (err, data) => {
+                if (err) throw err;
+                let roles = [];
+                data.forEach(entry => {
+                    let name = entry.title;
+                    let value = entry.id;
+                    let role = {
+                        name: name,
+                        value: value
+                    }
+                    roles.push(role);
+                })
+                console.log(roles);
+                return roles;
+            })
         }
     ]);
     let name;
@@ -331,6 +330,10 @@ const update = async () => {
         console.log(name + "\'s role updated to " + info.role.name + "!");
     });
     main();
+}
+
+let getLists = (array1, array2) => {
+
 }
 
 const end = () => {
