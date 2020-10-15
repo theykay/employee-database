@@ -46,7 +46,8 @@ const main = async () => {
             choices: [
                 { name: "View departments, roles, or employees", value: 1 },
                 { name: "Add a department, role, or employee", value: 2 },
-                { name: "Update employee roles", value: 3 }]
+                { name: "Update employee roles", value: 3 },
+                { name: "Close", value: 4}]
         }
     ]);
     if (response.action === 1) {
@@ -55,8 +56,7 @@ const main = async () => {
         add();
     } else if (response.action === 3) {
         update();
-    };
-    // main();
+    } else if (response.action === 4) end();
 };
 
 // add...
@@ -249,35 +249,26 @@ const view = async () => {
         }
     ])
     let { choice } = response;
-    switch (choice) {
-        case "departments":
-            connection.query("SELECT * FROM departments", (err, data) => {
-                if (err) throw err;
-                console.table(data);
-            })
-            break;
-        case "roles":
-            connection.query("SELECT roles.id, title, salary, department_name FROM roles LEFT JOIN departments ON roles.department_id = departments.id;", (err, data) => {
-                if (err) throw err;
-                console.table(data);
-            });
-            break;
-        case "employees":
-            connection.query("SELECT e.id, e.first_name, e.last_name, title, department_name, salary, IFNULL(CONCAT(m.first_name, ' ', m.last_name), ' ') AS manager FROM employees e LEFT JOIN roles ON e.role_id = roles.id LEFT JOIN departments ON roles.department_id = departments.id LEFT JOIN employees m ON e.id = m.manager_id;", (err, data) => {
-                if (err) throw err;
-                console.table(data);
-            })
-            break;
+    if (choice === "departments") {
+        connection.query("SELECT * FROM departments", (err, data) => {
+            if (err) throw err;
+            console.log("\nFetching data...\n");
+            console.table(data);
+        })
+    } else if (choice === "roles") {
+        connection.query("SELECT roles.id, title, salary, department_name FROM roles LEFT JOIN departments ON roles.department_id = departments.id;", (err, data) => {
+            if (err) throw err;
+            console.log("\nFetching data...\n");
+            console.table(data);
+        });
+    } else if (choice === "employees") {
+        connection.query("SELECT e.id, e.first_name, e.last_name, title, department_name, salary, IFNULL(CONCAT(m.first_name, ' ', m.last_name), ' ') AS manager FROM employees e LEFT JOIN roles ON e.role_id = roles.id LEFT JOIN departments ON roles.department_id = departments.id LEFT JOIN employees m ON e.id = m.manager_id;", (err, data) => {
+            if (err) throw err;
+            console.log("\nFetching data...\n");
+            console.table(data);
+        })
     };
-    var again = await inquirer.prompt([
-        {
-            type: "confirm",
-            name: "confirm",
-            message: "Return to main menu?"
-        }
-    ]);
-    if (again.confirm) main();
-    else end();
+    main();
 };
 
 const update = async () => {
