@@ -2,14 +2,14 @@ require("dotenv").config();
 const mysql = require("mysql");
 const inquirer = require("inquirer");
 const chalk = require("chalk");
-const cTable = require("console.table");
+const table = require("table");
 
 var connection = mysql.createConnection({
-    host: "localhost",
-    port: 3306,
-    user: "root",
-    password: process.env.mysql,
-    database: "employees_db"
+  host: "localhost",
+  port: 3306,
+  user: "root",
+  password: process.env.mysql,
+  database: "employees_db"
 })
 
 // console colors
@@ -22,389 +22,344 @@ const cyan = chalk.bold.cyan;
 const grey = chalk.bold.grey;
 
 connection.connect(function (err) {
-    if (err) {
-        console.error("error connecting: " + err.stack);
-        return;
-    }
-    console.log("connected as id " + connection.threadId);
-    main();
+  if (err) {
+    console.error("error connecting: " + err.stack);
+    return;
+  }
+  console.log("connected as id " + connection.threadId);
+  initial();
 });
 
+// **********************************************
 // **********************************************
 // week 12 activity 10 for using sql tables to
 // populate inquirer prompt choices in list type
 // **********************************************
+// **********************************************
 // week 12 activity 5 for joining tables
 // **********************************************
+// **********************************************
+// **********************************************
+// **********************************************
+// **********************************************
+// **********************************************
+// **********************************************
 
-const main = async () => {
-    var response = await inquirer.prompt([
-        {
-            type: "list",
-            name: "action",
-            message: "What would you like to do?",
-            choices: [
-                { name: "View departments, roles, or employees", value: 1 },
-                { name: "Add a department, role, or employee", value: 2 },
-                { name: "Update employee roles", value: 3 },
-                { name: "Close", value: 4}]
-        }
-    ]);
-    if (response.action === 1) {
-        view();
-    } else if (response.action === 2) {
-        add();
-    } else if (response.action === 3) {
-        update();
-    } else if (response.action === 4) end();
-};
+
+
+const initial = () => {
+  inquirer.prompt([
+    {
+      type: "list",
+      name: "action",
+      message: "What would you like to do?",
+      choices: [
+        {name: "View departments, roles, or employees", value: 1},
+        {name: "Add a department, role, or employee", value: 2}, 
+        {name: "Update employee roles", value: 3}]
+    }
+  ])
+  .then(answers => {
+    if (answers.action === 1) {
+      view();
+    } else if (answers.action === 2) {
+      add();
+    } else if (answers.action === 3) {
+      update();
+    }
+    // switch (answers.action) {
+    //   case 1:
+    //     add();
+    //     break;
+    //   case 2:
+    //     view();
+    //     break;
+    //   case 3:
+    //     update();
+    //     break;
+    // }
+    initial();
+  })
+  .catch(err => {
+    if (err) throw err;
+  });
+}
+
+const valid = (err, data, variable) => {
+  if (err) throw err;
+  if (data.length === 0) {
+    variable = false;
+  } else {
+    variable = true;
+  }
+  return variable;
+}
 
 // add...
-const add = async () => {
-    var addition = await inquirer.prompt([
-        {
-            type: "list",
-            name: "type",
-            message: "What new data would you like to add?",
-            choices: ["department", "role", "employee"]
-        }
-    ]);
-    const { type, confirm } = addition;
-
-
-    if (type === "employee") {
-        let roleDataExists;
-        connection.query("SELECT * FROM roles", (err, data) => {
-            if (err) throw err;
-            if (data.length > 0) roleDataExists = true;
-            else roleDataExists = false;
-            return roleDataExists;
-        });
+const add = () => {
+  inquirer.prompt([
+    {
+      type: "list",
+      name: "type",
+      message: "What new data would you like to add?",
+      choices: ["department", "role", "employee"]
+    }
+  ])
+    .then(answers => {
+      const { type } = answers;
+      let roleDataExists;
+      let departmentDataExists;
+      connection.query("SELECT * FROM roles", (err, data) => valid(err, data, roleDataExists));
+      connection.query("SELECT * FROM departments", (err, data) => valid(err, data, departmentDataExists));
+      if (type === "employee") {
         if (roleDataExists === false) {
-            console.log(red("Error: There must be at least one role before you can add an employee"));
-            console.log("Returning to addition main...")
-            add();
-        } else {
-            newEmployee();
-        };
-    } else if (type === "role") {
-        let departmentDataExists;
-        connection.query("SELECT * FROM departments", (err, data) => {
-            if (err) throw err;
-            if (data.length > 0) departmentDataExists = true;
-            else departmentDataExists = false;
-            return departmentDataExists;
-        });
+          console.log("Error: There must be at least one role before you can add an employee");
+          add();
+        }
+        newEmployee();
+      } else if (type === "role") {
         if (departmentDataExists === false) {
-            console.log(red("Error: There must be at least one department before you can add a role"));
-            console.log("Returning to addition main...");
-            add();
-        } else {
-            newRole();
+          console.log("Error: There must be at least one department before you can add a role");
+          add();
         }
-    } else if (type === "department") {
+        newRole();
+      } else if (type === "department") {
         newDepartment();
-    };
-};
-
+      };
+    })
+    .catch(err => {
+      if (err) throw err;
+    })
+}
 // ...employee
-const newEmployee = async () => {
-    let options = [];
-    connection.query("SELECT * FROM roles", (err, data) => {
-        if (err) throw err;
-        data.forEach((entry) => {
-            let name = entry.title;
-            let value = entry.id;
-            options.push({ name, value });
-        });
-        return options;
+const newEmployee = () => {
+  let options = [];
+  connection.query("SELECT * FROM roles", (err, data) => {
+    if (err) throw err;
+    data.forEach((entry) => {
+      let name = entry.title;
+      let value = entry.id;
+      options.push({ name, value });
     });
+    return options;
+  });
 
-    let managers = [{ name: "none", value: null }];
-    connection.query("SELECT * FROM employees", (err, data) => {
-        if (err) throw err;
-        data.forEach((entry) => {
-            let name = entry.first_name + " " + entry.last_name;
-            let value = entry.id;
-            managers.push({ name, value });
-        });
-        return managers;
+  let managers = [{name: "none", value: null}];
+  connection.query("SELECT * FROM employees", (err, data) => {
+    if (err) throw err;
+    data.forEach((entry) => {
+      let name = entry.first_name + " " + entry.last_name;
+      let value = entry.id;
+      managers.push({ name, value });
     });
+    return managers;
+  });
 
-    var info = await inquirer.prompt([
-        {
-            type: "input",
-            name: "first_name",
-            message: "Enter first name: ",
-            validate: (input) => {
-                const passing = input.match(/^[a-z]+$/gi);
-                if (!passing) return false;
-                return true;
-            }
-        },
-        {
-            type: "input",
-            name: "last_name",
-            message: "Enter last name: ",
-            validate: input => {
-                const passing = input.match(/^[a-z]+$/gi);
-                if (!passing) return false;
-                return true;
-            }
-        },
-        {
-            type: "list",
-            name: "role_id",
-            message: "Select a role: ",
-            choices: options
-        },
-        {
-            type: "list",
-            name: "manager_id",
-            message: "Select a manager: ",
-            choices: managers
-        }
-    ]);
-    connection.query("INSERT INTO employees SET ?", info, (err) => {
+  inquirer.prompt([
+    {
+      type: "input",
+      name: "first_name",
+      message: "Enter first name: ",
+      validate: (input) => {
+        const passing = input.match(/^[a-z]+$/gi);
+        if (!passing) return false;
+        return true;
+      }
+    },
+    {
+      type: "input",
+      name: "last_name",
+      message: "Enter last name: ",
+      validate: input => {
+        const passing = input.match(/^[a-z]+$/gi);
+        if (!passing) return false;
+        return true;
+      }
+    },
+    {
+      type: "list",
+      name: "role_id",
+      choices: options
+    },
+    {
+      type: "list",
+      name: "manager_id",
+      message: "Select a manager: ",
+      choices: managers
+    }
+  ])
+    .then(answers => {
+      connection.query("INSERT INTO employees SET ?", answers, (err) => {
         if (err) throw err;
-        console.log(`${info.first_name} ${info.last_name} added to employees!`)
-    });
-    main();
-};
+        console.log(`${answers.first_name} ${answers.last_name} added to employees!`)
+      })
+    })
+    .catch(err => {
+      if (err) throw err;
+    })
+}
 // ...role
-const newRole = async () => {
-    let departments = [];
-    connection.query("SELECT * FROM departments", (err, data) => {
-        if (err) throw err;
-        data.forEach((entry) => {
-            let name = entry.department_name;
-            let value = entry.id;
-            departments.push({ name, value });
-        });
-        return departments;
+const newRole = () => {
+  let departments = [];
+  connection.query("SELECT * FROM departments", (err, data) => {
+    if (err) throw err;
+    data.forEach((entry) => {
+      let name = entry.department_name;
+      let value = entry.id;
+      departments.push({ name, value });
     });
-    var info = await inquirer.prompt([
-        {
-            type: "input",
-            name: "title",
-            message: "Enter name of role: ",
-            validate: (input) => {
-                const passing = input.match(/^[a-z]+$/gi);
-                if (!passing) return false;
-                return true;
-            }
-        },
-        {
-            type: "input",
-            name: "salary",
-            message: "Enter salary",
-            validate: (input) => {
-                const passing = input.match(/^\d+$/g);
-                if (!passing) return false;
-                return true;
-            }
-        },
-        {
-            type: "list",
-            name: "department_id",
-            message: "select a department to put this role into: ",
-            choices: departments
-        }
-    ]);
-    connection.query("INSERT INTO roles SET ?", info, (err) => {
-        if (err) throw err;
-        console.log(`${info.title} added to roles!`)
-    });
-    main();
+    return departments;
+  });
+  inquirer.prompt([
+    {
+      type: "input",
+      name: "title",
+      message: "Enter name of role: ",
+      validate: (input) => {
+        const passing = input.match(/^[a-z]+$/gi);
+        if (!passing) return false;
+        return true;
+      }
+    },
+    {
+      type: "input",
+      name: "salary",
+      message: "Enter salary",
+      validate: (input) => {
+        const passing = input.match(/^\d+$/g);
+        if (!passing) return false;
+        return true;
+      }
+    },
+    {
+      type: "list",
+      name: "department_id",
+      message: "select a department to put this role into: ",
+      choices: departments
+    }
+  ])
+  .then(answers => {
+    connection.query("INSERT INTO roles SET ?", answers, (err) => {
+      if (err) throw err;
+      console.log(`${answers.title} added to roles!`)
+    })
+  })
+  .catch(err => {
+    if (err) throw err;
+  })
 }
 // ...department
-const newDepartment = async () => {
-    var info = await inquirer.prompt([
-        {
-            type: "input",
-            name: "department_name",
-            message: "Input department name: ",
-            validate: (input) => {
-                const passing = input.match(/^[a-z\s]+$/gi);
-                if (!passing) return false;
-                return true;
-            }
-        }
-    ]);
-    connection.query("INSERT INTO departments SET ?", info, (err) => {
-        if (err) throw err;
-        console.log(`${info.department_name} added to departments!`)
-    });
-    main();
-};
-
-// view tables
-const view = async () => {
-    var response = await inquirer.prompt([
-        {
-            type: "list",
-            name: "choice",
-            message: "Which table would you like to view?",
-            choices: ["departments", "roles", "employees"]
-        }
-    ])
-    let { choice } = response;
-    if (choice === "departments") {
-        connection.query("SELECT * FROM departments", (err, data) => {
-            if (err) throw err;
-            console.log("\nFetching data...\n");
-            console.table(data);
-        })
-    } else if (choice === "roles") {
-        connection.query("SELECT roles.id, title, salary, department_name FROM roles LEFT JOIN departments ON roles.department_id = departments.id;", (err, data) => {
-            if (err) throw err;
-            console.log("\nFetching data...\n");
-            console.table(data);
-        });
-    } else if (choice === "employees") {
-        connection.query("SELECT e.id, e.first_name, e.last_name, title, department_name, salary, IFNULL(CONCAT(m.first_name, ' ', m.last_name), ' ') AS manager FROM employees e LEFT JOIN roles ON e.role_id = roles.id LEFT JOIN departments ON roles.department_id = departments.id LEFT JOIN employees m ON e.id = m.manager_id;", (err, data) => {
-            if (err) throw err;
-            console.log("\nFetching data...\n");
-            console.table(data);
-        })
-    };
-    main();
-};
-
-const update = async () => {
-    let employees = [];
-    connection.query("SELECT * FROM employees", (err, data) => {
-        if (err) throw err;
-        // console.log(data);
-        data.forEach((entry) => {
-            let name = entry.first_name + " " + entry.last_name;
-            let value = entry.id;
-            let employee = {
-                name: name,
-                value: value
-            }
-            employees.push(employee);
-        });
-        // console.log(employees);
-        return employees;
-    });
-
-    let roles = [];
-    connection.query("SELECT * FROM roles", (err, data) => {
-        if (err) throw err;
-        data.forEach(entry => {
-            let name = entry.title;
-            let value = entry.id;
-            let role = {
-                name: name,
-                value: value
-            }
-            roles.push(role);
-        })
-        // console.log(roles);
-        return roles;
-    });
-
-    var choice = await inquirer.prompt([
-        {
-            type: "list",
-            name: "pick",
-            message: "What info would you like to update?",
-            choices: ["manager", "role", "both"]
-        }
-    ]);
-    // var questions = [];
-    if (choice.pick === "manager") {
-        var info = await inquirer.prompt([
-            {
-                type: "list",
-                name: "id",
-                message: "Whose role would you like to update?",
-                choices: employees
-            },
-            {
-                type: "list",
-                name: "manager_id",
-                message: "Select a manager",
-                choices: employees
-            }
-        ])
-        let name;
-        connection.query("SELECT * FROM employees WHERE ?", [{ id: info.id }], (err, data) => {
-            if (err) throw err;
-            name = data[0].first_name + " " + data[0].last_name;
-        });
-        let manager;
-        connection.query("SELECT * FROM employees WHERE ?", [{ id: info.manager_id }, (err, data) => {
-            if (err) throw err;
-            manager = data[0].first_name + " " + data[0].last_name;
-        }])
-        connection.query("UPDATE employees SET ? WHERE ?", [{ manager_id: info.manager_id }, { id: info.id }], (err) => {
-            if (err) throw err;
-            console.log(name + "\'s manager updated to " + manager + "!");
-        });
-    } else if (choice.pick === "role") {
-        var info = await inquirer.prompt([
-            {
-                type: "list",
-                name: "id",
-                message: "Whose role would you like to update?",
-                choices: employees
-            },
-            {
-                type: "list",
-                name: "role",
-                message: "Select new role",
-                choices: roles
-            }
-        ]);
-        let name;
-        connection.query("SELECT * FROM employees WHERE ?", [{ id: info.id }], (err, data) => {
-            if (err) throw err;
-            name = data[0].first_name + " " + data[0].last_name;
-        });
-        connection.query("UPDATE employees SET ? WHERE ?", [{ role_id: info.role }, { id: info.id }], (err) => {
-            if (err) throw err;
-            console.log(name + "\'s role updated to " + info.role.name + "!");
-        });
-    } else if (choice.pick === "both") {
-        var info = await inquirer.prompt([
-
-            {
-                type: "list",
-                name: "id",
-                message: "Whose role would you like to update?",
-                choices: employees
-            },
-            {
-                type: "list",
-                name: "manager_id",
-                message: "Select a manager",
-                choices: employees
-            },
-            {
-                type: "list",
-                name: "role",
-                message: "Select new role",
-                choices: roles
-            }
-        ]);
-        let name;
-        let role = info.role.name;
-        connection.query("SELECT * FROM employees WHERE ?", [{ id: info.id }], (err, data) => {
-            if (err) throw err;
-            name = data[0].first_name + " " + data[0].last_name;
-        });
-        connection.query("UPDATE employees SET ? WHERE ?", [{ role_id: info.role, manager_id: info.manager_id }, { id: info.id }], (err) => {
-            if (err) throw err;
-            console.log(name + "\'s manager updated to " + manager + "!")
-            console.log(name + "\'s role updated to " + role + "!");
-        });
+const newDepartment = () => {
+  inquirer.prompt([
+    {
+      type: "input",
+      name: "department_name",
+      message: "Input department name: ",
+      validate: (input) => {
+        const passing = input.match(/^[a-z\s]+$/gi);
+        if (!passing) return false;
+        return true;
+      }
     }
-    main();
+  ])
+    .then(answers => {
+      connection.query("INSERT INTO departments SET ?", answers, (err) => {
+        if (err) throw err;
+        console.log(`${answers.department_name} added to departments!`);
+      })
+    })
+    .catch(error => {
+      if (error) throw error;
+    });
 }
 
-const end = () => {
-    console.log("Closing...");
-    process.exit();
+// view tables
+const view = () => {
+  inquirer.prompt([
+    {
+      type: "list",
+      name: "choice",
+      message: "Which table would you like to view?",
+      choices: ["departments", "roles", "employees"]
+    }
+  ])
+    .then(answers => {
+      let { choice } = answers;
+      switch (choice) {
+        case "departments":
+          connection.query("SELECT * FROM departments", (err, data) => {
+            if (err) throw err;
+            console.table(data);
+          })
+          break;
+        case "roles":
+          connection.query("SELECT * FROM roles", (err, data) => {
+            if (err) throw err;
+            console.table(data);
+          });
+          break;
+        case "employees":
+          connection.query("SELECT * FROM employees", (err, data) => {
+            if (err) throw err;
+            console.table(data);
+          })
+          break;
+      };
+    })
+    .catch(error => {
+      if (error) throw error;
+    });
+};
+
+const update = () => {
+  let employees = [];
+  connection.query("SELECT * FROM employees", (err, data) => {
+    if (err) throw err;
+    data.forEach((entry) => {
+      let name = entry.first_name + " " + entry.last_name;
+      let value = entry.id;
+      employees.push({name, value});
+    });
+    return employees;
+  });
+
+  let roles = [];
+  connection.query("SELECT * FROM roles", (err, data) => {
+    if (err) throw err;
+    data.forEach((entry) => {
+      let name = entry.title;
+      let value = entry.id;
+      roles.push({name, value});
+    })
+    return roles;
+  });
+
+  inquirer.prompt([
+    {
+      type: "list",
+      name: "id",
+      message: "Whose role would you like to update?",
+      choices: employees
+    },
+    {
+      type: "list",
+      name: "role",
+      message: "Select new role",
+      choices: roles
+    }
+  ])
+  .then((answers) => {
+    let name;
+    connection.query("SELECT * FROM employees WHERE ?", [{id: answers.id}], (err, data) => {
+      if (err) throw err;
+      name = data.first_name + " " + data.last_name;
+    });
+    connection.query("UPDATE employees SET ? WHERE ?", [{role: answers.role},{id: answers.id}], (err) => {
+      if (err) throw err;
+      console.log(name + "\'s role updated to " + answers.role.name + "!");
+    })
+  })
+  .catch((err) => {
+    if (err) throw err;
+  });
 }
