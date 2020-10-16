@@ -17,8 +17,10 @@ Node application to generate and display a database containing departments, role
 `npm install`
 
 ## Usage
-`node index.js`
-![gif of application running](placeholder)
+`node main.js`\
+![gif of application running - view](assets/view.gif)\
+![gif of application running - add](assets/add.gif)\
+![gif of application running - update](assets/update.gif)
 
 ## License
 This application covered under the MIT License

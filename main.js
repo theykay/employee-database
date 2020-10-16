@@ -395,6 +395,11 @@ const update = async () => {
             if (err) throw err;
             name = data[0].first_name + " " + data[0].last_name;
         });
+        let manager;
+        connection.query("SELECT * FROM employees WHERE ?", [{ id: info.manager_id }, (err, data) => {
+            if (err) throw err;
+            manager = data[0].first_name + " " + data[0].last_name;
+        }])
         connection.query("UPDATE employees SET ? WHERE ?", [{ role_id: info.role, manager_id: info.manager_id }, { id: info.id }], (err) => {
             if (err) throw err;
             console.log(name + "\'s manager updated to " + manager + "!")
