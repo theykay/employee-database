@@ -18,8 +18,11 @@ Node application to generate and display a database containing departments, role
 
 ## Usage
 `node main.js`\
+Viewing entries\
 ![gif of application running - view](assets/view.gif)\
+Adding entries\
 ![gif of application running - add](assets/add.gif)\
+Updating employees\
 ![gif of application running - update](assets/update.gif)
 
 ## License

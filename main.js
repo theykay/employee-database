@@ -189,7 +189,7 @@ const newRole = async () => {
             name: "title",
             message: "Enter name of role: ",
             validate: (input) => {
-                const passing = input.match(/^[a-z]+$/gi);
+                const passing = input.match(/^[a-z\s]+$/gi);
                 if (!passing) return false;
                 return true;
             }
